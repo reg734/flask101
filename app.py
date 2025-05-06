@@ -1,5 +1,6 @@
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
+from linebot.v3.messaging import MessagingApi, Configuration
+from linebot.v3.webhook import WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
@@ -10,8 +11,9 @@ load_dotenv()
 
 app = Flask(__name__)
 
-line_bot_api = LineBotApi(os.getenv('YOUR_CHANNEL_ACCESS_TOKEN'))
-handler = WebhookHandler(os.getenv('YOUR_CHANNEL_SECRET'))
+configuration = Configuration(access_token=os.getenv('YOUR_CHANNEL_ACCESS_TOKEN'))
+line_bot_api = MessagingApi(configuration)
+handler = WebhookHandler(channel_secret=os.getenv('YOUR_CHANNEL_SECRET'))
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def generate_response(prompt, role="user"):
