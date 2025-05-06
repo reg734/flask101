@@ -1,6 +1,6 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi, Configuration
-from linebot.v3.messaging import TextSendMessage, ReplyMessageRequest
+from linebot.v3.messaging import MessagingApi, Configuration, ReplyMessageRequest
+from linebot.v3.messaging.models import TextSendMessage
 import os
 import json
 import openai
