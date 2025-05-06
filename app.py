@@ -11,9 +11,9 @@ load_dotenv()
 
 app = Flask(__name__)
 
-configuration = Configuration(access_token=os.getenv('YOUR_CHANNEL_ACCESS_TOKEN'))
+configuration = Configuration(access_token=os.getenv('CHANNEL_ACCESS_TOKEN'))
 line_bot_api = MessagingApi(configuration)
-handler = WebhookHandler(channel_secret=os.getenv('YOUR_CHANNEL_SECRET'))
+handler = WebhookHandler(channel_secret=os.getenv('CHANNEL_SECRET'))
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def generate_response(prompt, role="user"):
