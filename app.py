@@ -1,6 +1,7 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi, Configuration, ReplyMessageRequest
+from linebot.v3.messaging import MessagingApi, Configuration, ApiClient, ReplyMessageRequest
 from linebot.v3.messaging.models import TextMessage
+from linebot.v3.webhook import WebhookHandler
 import os
 import json
 import openai
@@ -13,8 +14,10 @@ app = Flask(__name__)
 
 # 設定 LINE 與 OpenAI
 configuration = Configuration(access_token=os.getenv("CHANNEL_ACCESS_TOKEN"))
-line_bot_api = MessagingApi(configuration)
+api_client = ApiClient(configuration)
+line_bot_api = MessagingApi(api_client)
 openai.api_key = os.getenv("OPENAI_API_KEY")
+handler = WebhookHandler(os.getenv("CHANNEL_SECRET"))
 
 # 健康檢查 route
 @app.route("/", methods=["GET"])
