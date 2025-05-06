@@ -1,7 +1,6 @@
 from flask import Flask, request, abort
 from linebot.v3.messaging import MessagingApi, Configuration
-from linebot.v3.messaging.models import TextSendMessage, ReplyMessageRequest
-from linebot.exceptions import InvalidSignatureError
+from linebot.v3.messaging import TextSendMessage, ReplyMessageRequest
 import os
 import json
 import openai
