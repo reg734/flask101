@@ -4,82 +4,99 @@ from linebot.v3.webhook import WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 
+# 載入 .env 環境變數
 load_dotenv()
 
+# 初始化 Flask app
 app = Flask(__name__)
 
+# 設定 LINE Messaging API 與 OpenAI
 configuration = Configuration(access_token=os.getenv('CHANNEL_ACCESS_TOKEN'))
 line_bot_api = MessagingApi(configuration)
 handler = WebhookHandler(channel_secret=os.getenv('CHANNEL_SECRET'))
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
-def generate_response(prompt, role="user"):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": role, "content": prompt}]
-    )
-    return response.choices[0].message.content
-
+# 方便 render 檢查用的首頁
 @app.route("/", methods=["GET"])
 def home():
-    return "LINE Bot is running!"
+    return "LINE Bot is running."
 
+# ChatGPT 回覆邏輯
+def generate_response(prompt, role="user"):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": role, "content": prompt}]
+        )
+        return response.choices[0].message['content']
+    except Exception as e:
+        print(f"[OpenAI 錯誤] {e}")
+        return "⚠️ 無法從 ChatGPT 取得回覆，請稍後再試。"
+
+# LINE Webhook 路由
 @app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers['X-Line-Signature']
+    signature = request.headers.get('X-Line-Signature')
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
+    print(f"[Webhook 收到] {body}")
+
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
+        print("[錯誤] Invalid Signature")
         abort(400)
     except Exception as e:
-        app.logger.error(f"Callback error: {e}")
+        print(f"[Handler 錯誤] {e}")
         abort(500)
+
     return 'OK'
 
+# 訊息處理
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     try:
-        msg = event.message.text.lower()
-        if msg.startswith('/echo '):
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=msg[6:])
-            )
-        elif msg.startswith('/g '):
-            response = generate_response(msg[3:])
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=response)
-            )
-        elif msg.startswith('/t '):
-            response = generate_response("請幫我翻譯成正體中文：" + msg[3:])
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=response)
-            )
-        elif msg.startswith('/e '):
-            response = generate_response("請幫我翻譯成英文：" + msg[3:])
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=response)
-            )
+        msg = event.message.text.strip()
+        print(f"[收到訊息] {msg}")
+
+        # /echo 回覆
+        if msg.lower().startswith('/echo '):
+            reply = msg[6:]
+
+        # /g 啟用 ChatGPT
+        elif msg.lower().startswith('/g '):
+            reply = generate_response(msg[3:])
+
+        # 翻譯成繁中
+        elif msg.lower().startswith('/t '):
+            reply = generate_response("請翻譯成正體中文：" + msg[3:])
+
+        # 翻譯成英文
+        elif msg.lower().startswith('/e '):
+            reply = generate_response("請翻譯成英文：" + msg[3:])
+
+        # 默認直接丟 ChatGPT
         else:
-            reply_text = generate_response(msg)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=reply_text)
-            )
-    except Exception as e:
-        print(f"LINE bot 錯誤：{e}")
+            reply = generate_response(msg)
+
+        # 回傳給用戶
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="發生錯誤，請稍後再試。")
+            TextSendMessage(text=reply)
         )
+
+    except Exception as e:
+        print(f"[處理訊息錯誤] {e}")
+        try:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="⚠️ 發生錯誤，請稍後再試。")
+            )
+        except:
+            pass  # reply_token 可能已過期，忽略
+
 
 if __name__ == "__main__":
     app.run(debug=True)
