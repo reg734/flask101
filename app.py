@@ -23,6 +23,10 @@ def generate_response(prompt, role="user"):
     )
     return response.choices[0].message.content
 
+@app.route("/", methods=["GET"])
+def home():
+    return "LINE Bot is running!"
+
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
