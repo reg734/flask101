@@ -6,6 +6,8 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 import openai
 from dotenv import load_dotenv
+import json
+from linebot.models import *
 
 # 載入 .env 環境變數
 load_dotenv()
@@ -44,12 +46,30 @@ def callback():
     print(f"[Webhook 收到] {body}")
 
     try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        print("[錯誤] Invalid Signature")
-        abort(400)
+        events = json.loads(body)["events"]
+        for event in events:
+            if event["type"] == "message" and event["message"]["type"] == "text":
+                user_text = event["message"]["text"]
+                reply_token = event["replyToken"]
+                print(f"[收到訊息] {user_text}")
+
+                if user_text.lower().startswith("/echo "):
+                    reply_text = user_text[6:]
+                elif user_text.lower().startswith("/g "):
+                    reply_text = generate_response(user_text[3:])
+                elif user_text.lower().startswith("/t "):
+                    reply_text = generate_response("請翻譯成正體中文：" + user_text[3:])
+                elif user_text.lower().startswith("/e "):
+                    reply_text = generate_response("請翻譯成英文：" + user_text[3:])
+                else:
+                    reply_text = generate_response(user_text)
+
+                line_bot_api.reply_message(
+                    reply_token,
+                    TextSendMessage(text=reply_text)
+                )
     except Exception as e:
-        print(f"[Handler 錯誤] {e}")
+        print(f"[處理 callback 錯誤] {e}")
         abort(500)
 
     return 'OK'
