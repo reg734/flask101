@@ -1,6 +1,6 @@
 from flask import Flask, request, abort
 from linebot.v3.messaging import MessagingApi, Configuration, ReplyMessageRequest
-from linebot.v3.messaging.models import TextSendMessage
+from linebot.v3.messaging.models import TextMessage
 import os
 import json
 import openai
@@ -63,7 +63,7 @@ def callback():
                 line_bot_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=reply_token,
-                        messages=[TextSendMessage(text=reply_text)]
+                        messages=[TextMessage(text=reply_text)]
                     )
                 )
     except Exception as e:
