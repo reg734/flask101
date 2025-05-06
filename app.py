@@ -27,11 +27,11 @@ def home():
 # ChatGPT 回覆邏輯
 def generate_response(prompt, role="user"):
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": role, "content": prompt}]
         )
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
     except Exception as e:
         print(f"[OpenAI 錯誤] {e}")
         return "⚠️ OpenAI 回覆失敗，請稍後再試。"
